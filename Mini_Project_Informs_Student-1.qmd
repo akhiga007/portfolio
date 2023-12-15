@@ -1,0 +1,325 @@
+---
+title: "Mini Project Informs Data Challenge"
+author: "Team 9"
+format: html
+editor: visual
+---
+
+## Introduction
+
+This project is based on the dataset provided for the [INFORMS 2023 Data Challenge](https://connect.informs.org/HigherLogic/System/DownloadDocumentFile.ashx?DocumentFileKey=cc03a951-a39a-467a-be4a-0189b203c4ca). INFORMS teamed up with Blue Summit Supplies, an online retailer based in Alabama, to tackle real-world challenges in setting the right prices for their products. The eCommerce market is fast-paced, with prices changing constantly. Quick and smart pricing decisions are essential for staying competitive and profitable. The Informs data challenge aims to use the company's actual sales data to explore how pricing impacts profits, with the goal of helping the company make better, faster pricing decisions. This projects takes a different route. As a team, your task is to understand the dataset and prepare it for further analyses.
+
+-   **Programming Language**: R
+
+-   **Deliverables**: Quarto Document (.qmd) and HTML Knitted Document
+
+-   **Libraries**: Any libraries you deem necessary
+
+-   There are 8 tasks, each is worth 12.5 points.
+
+#### Data Set Description
+
+-   `sku`: This is the product ID, a unique identifier for each product.
+
+-   `salesdate`: This represents the date on which a particular product was sold.
+
+-   `price`: This is the price at which the product was sold on a given day.
+
+-   `unitsordered`: This variable shows the number of units of a product ordered on a particular day.
+
+-   `sales`: This represents the total revenue generated from the sale of a product on a given day (it is calculated as the product\`s price times the number of units ordered).
+
+-   `cogs`: This stands for "Cost of Goods Sold", which is the direct cost incurred by the company to produce or purchase the product.
+
+-   `fba`: This is the eCommerce fee associated with selling the product. It includes the costs of storage, packing, and shipping handled by Amazon.
+
+-   `reffee`: This is the eCommerce platform fee associated with selling the product (15% of sales).
+
+-   `adspend`: This represents the advertisement cost associated with the product.
+
+-   `profit`: This is the profit obtained from selling the product, calculated as sales minus the sum of cogs, fba, reffee, and adspend (profit = sales - cogs - fba - reffee - adspend).
+
+-   `comp_x_price`: This represents the price of a similar product sold by a competitor. Up to 5 competitors\` price data are available for each product (67 items have O competitors, 65 items have 1 competitor, 56 items have 2 competitors, 28 items have 3 competitors, 9 items have 4 competitors, 2 items have 5 competitors).
+
+-   `comp_data_min_price`: This is the minimum price among all competitors for a similar product.
+
+-   `comp_data_max_price`: This is the maximum price among all competitors for a similar product.
+
+-   `managed_fba_stock_level`: This represents the available quantity of the product in stock.
+
+-   `min_price`: This is the minimum allowable selling price for the product
+
+-   `max_price`: This is the maximum allowable selling price for the product.
+
+#### Read the data in R
+
+```{r, echo=TRUE}
+
+informs <- read.csv("C:/Users/akhil/Downloads/2023 INFORMS BSS Data Challenge Dataset-2.csv", header = TRUE)
+
+```
+
+#### TASK 1:
+
+In this task, you will be ensuring that all variables in the dataset `informs` are of the correct type. This is a crucial step in any data analysis project, as incorrect variable types can lead to misleading analyses and results.
+
+##### Details:
+
+-   Declare categorical variables as factors.
+
+-   Convert the date variable to a date format.
+
+-   Ensure that numerical variables are set as numerical data types.
+
+-   Your R object, `informs` , should have `122801` rows and `20` columns.
+
+-   Print the data structure below with `str(informs)` function.
+
+```{r, echo=TRUE}
+
+
+# Step 1: Declare categorical variables as factors
+# It appears that "sku" is a categorical variable (product ID)
+informs$sku <- as.factor(informs$sku)
+
+# Step 2: Convert the "salesdate" variable to a date format
+informs$salesdate <- as.Date(informs$salesdate)
+
+# Step 3: Ensure that numerical variables are set as numerical data types
+# All other variables seem to be numerical
+
+# Check the structure of 'informs'
+str(informs)
+
+
+
+
+
+```
+
+#### TASK 2:
+
+In this task, you are required to calculate the percentage of missing values for each variable in the `informs` dataset and display the results in a table. Understanding the extent of missing data is a crucial step in data analysis, as it can significantly impact the results.
+
+##### Details:
+
+-   Your printed table should display the variable name, `variable` in the first column and the percentage of missing values, called `Percent_Missing`, in the second column.
+-   The table should be sorted in descending order based on the percentage of missingness (`Percent_Missing`). If two variables have the same percentage of missingness, then they should be sorted by their variable names (`variable`) in ascending alphabetical order.
+-   Your code should print the table below
+
+```{r, echo=TRUE}
+
+# Calculate the percentage of missing values for each variable
+missing_percentage <- colMeans(is.na(informs)) * 100
+
+# Create a data frame for the results
+missing_data_summary <- data.frame(
+  variable = names(missing_percentage),
+  Percent_Missing = missing_percentage
+)
+
+# Sort the data frame by Percent_Missing in descending order, then by variable in ascending order
+missing_data_summary <- missing_data_summary[order(-missing_data_summary$Percent_Missing, missing_data_summary$variable),]
+
+# Print the table
+print(missing_data_summary)
+
+
+```
+
+#### TASK 3:
+
+In this task, you are required to create a new column in the **`informs`** dataset called **`number_competitors`**. This column should contain the total number of competitors. In other words, it contains the total number of non-missing values for the competitor price variables: **`comp_1_price`**, **`comp_2_price`**, **`comp_3_price`**, **`comp_4_price`**, and **`comp_5_price`**.
+
+##### Details:
+
+-   The **`number_competitors`** column will have a value of `0` if there are no competitor data available for that particular row.
+
+-   If data from only three competitors is present in a given row, then **`number_competitors`** will have a value of 3.
+
+-   After completing this task, your **`informs`** data frame should consist of 122,801 rows and 21 columns
+
+```{r, echo=TRUE}
+# Create a new column number_competitors
+informs$number_competitors <- rowSums(!is.na(informs[, c("comp_1_price", "comp_2_price", "comp_3_price", "comp_4_price", "comp_5_price")]))
+
+# Check the structure of 'informs' after adding the new column
+str(informs)
+
+
+```
+
+#### TASK 4:
+
+-   In this task, you are required to create two new columns in the informs dataset called **`median_competitor_price`** and **`price_differences`**.
+
+-   This first column,**`median_competitor_price`** , should contain the median price among competitors. In other words, it contains the median of non-missing values for the competitor price variables: **`comp_1_price`**, **`comp_2_price`**, **`comp_3_price`**, **`comp_4_price`**, and **`comp_5_price`**. The **`median_competitor_price`** column will have a value of **`NA`** if there are no competitor data available for that particular row.
+
+-   The second column, **`price_differences`** should represent the difference between the company's price (`price`) and the median competitor price, **`median_competitor_price`** , for each transaction (row). If there are no competitor data available for that particular row, set **`price_differences`** to `NA`.
+
+-   After completing this task, your informs data frame should consist of 122,801 rows and 23 columns.\
+
+```{r, echo=TRUE}
+
+# Calculate the median competitor price for each row
+informs$median_competitor_price <- apply(informs[, c("comp_1_price", "comp_2_price", "comp_3_price", "comp_4_price", "comp_5_price")], 1, function(row) {
+  non_missing_prices <- na.omit(row)
+  if (length(non_missing_prices) > 0) {
+    median(non_missing_prices)
+  } else {
+    NA
+  }
+})
+
+# Calculate the price differences
+informs$price_differences <- informs$price - informs$median_competitor_price
+
+# Check the structure of 'informs' after adding the new columns
+str(informs)
+
+
+```
+
+#### TASK 5:
+
+In this task, your goal is to create an R object called **`average_profit_vs_competitors`** that will store the `sku` and the following two variables:
+
+1.  The average profit per unit for each `sku`, called `average_profit` . The `average_profit`should be calculated as $\frac{profit}{unitsordered}$​.
+
+2.  The average number of competitors per `sku`, called `average_number_competitors.` The `average_number_competitors` for each `sku` should be calculated as `mean(number_competitors)` in R.
+
+##### **Details:**
+
+-   Compute the average profit for each `sku`, labeling this new variable as **`average_profit`**.
+
+-   Double check your calculations to make sure you do not have **`-Inf`** for **`average_profit`** values. The issue of **`-Inf`** most likely arises when **`unitsordered`** is zero, as division by zero in R returns **`-Inf`**. If **`unitsordered`** is zero for a given day and `sku`, you can temporarily set it to **`NA`** to avoid **`-Inf`** in **`average_profit`** calculations.
+
+-   Arrange these calculated average profits in descending order for easier interpretation.
+
+-   After completing this task, your R object named **`average_profit_vs_competitors`** should have exactly 227 rows and 3 columns: `sku`, `average_profit`, and `average_number_competitors`
+
+```{r, echo=TRUE}
+library(dplyr)
+# Calculate average profit per unit
+informs$average_profit <- informs$profit / informs$unitsordered
+
+# Replace -Inf values with NA where unitsordered is zero
+informs$average_profit[informs$unitsordered == 0] <- NA
+
+# Create a new data frame for average_profit_vs_competitors
+average_profit_vs_competitors <- informs %>%
+  group_by(sku) %>%
+  summarize(
+    average_profit = mean(average_profit, na.rm = TRUE),
+    average_number_competitors = mean(number_competitors)
+  ) %>%
+  arrange(desc(average_profit))
+
+# Check the structure of 'average_profit_vs_competitors'
+str(average_profit_vs_competitors)
+
+
+
+
+
+
+
+
+```
+
+#### TASK 6:
+
+In this task, you are required to create a scatter plot using the **`average_profit_vs_competitors`** dataset and interpret it. Your plot should display the relationship between **`average_profit`** and **`average_number_competitors`**, specifically for rows where **`average_profit`** is greater than zero. Additionally, include a linear regression line on the scatter plot to gauge the overall trend.
+
+##### Details:
+
+-   Generate a scatter plot to display **`average_profit`** on the y-axis and **`average_number_competitors`** on the x-axis.
+
+-   Overlay a linear regression line on the scatter plot.
+
+-   Filter the data to include only rows where **`average_profit`** is greater than zero.
+
+-   Label your axis
+
+-   Interpret your findings in one short paragraph.
+
+```{r, echo=TRUE}
+
+# Load the ggplot2 library
+library(ggplot2)
+
+# Filter the data to include only rows where average_profit is greater than zero
+filtered_data <- subset(average_profit_vs_competitors, average_profit > 0)
+
+# Create the scatter plot
+ggplot(filtered_data, aes(x = average_number_competitors, y = average_profit)) +
+  geom_point() +                   # Add points for the scatter plot
+  geom_smooth(method = "lm") +     # Overlay a linear regression line
+  labs(x = "Average Number of Competitors", y = "Average Profit") +  # Label axes
+  ggtitle("Scatter Plot of Average Profit vs. Average Number of Competitors")  # Add title
+
+```
+
+This code creates a scatter plot with average_number_competitors on the x-axis and average_profit on the y-axis, overlaying a linear regression line to visualize the overall trend. It filters the data to include only rows where average_profit is greater than zero.
+
+**Interpretation: In the above generated scatter plot, we can observe the relationship between the average profit per unit and the average number of competitors for dufferent SKUs.The slope of the linear reegression is seen to be positive , this indicates that, on average, as the number of competitors increases , the average profit per unit also increases.This also implies that competition in the market lead to higher profits. but it is important to consider other dynamic factors and strategies that influence profitability in real time.**
+
+#### TASK 7:
+
+-   The total sales revenue of a firm is calculated as the product of the price per unit and the total quantity sold. The impact of a price increase on total sales depends on the corresponding decrease in the quantity sold. In a highly competitive market, even a small increase in price can lead to a significant drop in sales, which in turn can reduce both total sales and profits.
+
+    For this task, please complete the following steps:
+
+    1.  Create a subset of the **`informs`** dataset by removing rows that have no competitors. Name this new dataset **`informs_reduced`**.
+
+    2.  Calculate the correlation between **`price`** and **`profit`** for cases where **`price_differences > 0`** and **`price_differences <= 0`**. Print and interpret your findings.
+
+    3.  Calculate the correlation between **`price`** and **`units_ordered`** for cases where **`price_differences > 0`** and **`price_differences <= 0`**. Print and interpret your findings.
+
+```{r}
+# Step 1: Create a subset of informs dataset by removing rows with no competitors
+informs_reduced <- informs[informs$number_competitors > 0, ]
+
+# Step 2: Calculate the correlation between price and profit
+correlation_price_profit_positive <- cor(
+  informs_reduced$price[informs_reduced$price_differences > 0],
+  informs_reduced$profit[informs_reduced$price_differences > 0]
+)
+
+correlation_price_profit_negative <- cor(
+  informs_reduced$price[informs_reduced$price_differences <= 0],
+  informs_reduced$profit[informs_reduced$price_differences <= 0]
+)
+
+# Step 3: Calculate the correlation between price and units_ordered
+correlation_price_units_ordered_positive <- cor(
+  informs_reduced$price[informs_reduced$price_differences > 0],
+  informs_reduced$unitsordered[informs_reduced$price_differences > 0]
+)
+
+correlation_price_units_ordered_negative <- cor(
+  informs_reduced$price[informs_reduced$price_differences <= 0],
+  informs_reduced$unitsordered[informs_reduced$price_differences <= 0]
+)
+
+# Step 4: Print and interpret your findings
+cat("Correlation between price and profit (Price Increase):", correlation_price_profit_positive, "\n")
+cat("Correlation between price and profit (Price Decrease):", correlation_price_profit_negative, "\n")
+cat("Correlation between price and units_ordered (Price Increase):", correlation_price_units_ordered_positive, "\n")
+cat("Correlation between price and units_ordered (Price Decrease):", correlation_price_units_ordered_negative, "\n")
+
+
+
+```
+
+This code first creates a subset **`informs_reduced`** by filtering out rows with no competitors. Then, it calculates correlations between **`price`** and **`profit`** and between **`price`** and **`unitsordered`** for cases where **`price_differences > 0`** and **`price_differences <= 0`**. Finally, it prints and interprets the findings.
+
+**Interpretation: The relationship between price and profit shows a positive correlation when prices rise (price differences \> 0), meaning that as prices increase, profits also tend to rise. Conversely, when prices decrease (price differences \<= 0), there is a negative correlation, indicating that lower prices typically lead to higher profits and vice versa.**
+
+**In terms of the connection between price and units_ordered, it's expected that a negative correlation exists in both scenarios of price increase and decrease. This implies that as prices go up, the quantity of units ordered tends to decline, and conversely, when prices decrease, there's a tendency for an increase in units ordered. This underscores the influence of price changes on customer demand**
+
+#### TASK 8:
+
+Based on your insights from Task 7, earlier tasks, or your own analyses, provide a pricing recommendation to help the company's to increase their profitability. Keep your response concise. You may include a graph or analysis to substantiate your recommendation. Summarize your suggestion and rationale in a brief paragraph.
+
+**We advise the company to carefully evaluate the impact of pricing adjustments on profitability in light of the analysis done in Task 7 and the relationships between price, profit, and units ordered. In particular, it's critical to keep an eye on how price increases impact earnings and units ordered while planning price increases. According to the data, price increases are linked to increased profit, but they might also result in a fall in the number of units ordered. In order to ensure a sustainable increase in profits without suffering a significant loss in sales volume, the company should conduct pricing experiments to find the balance that maximizes profitability, possibly considering smaller, incremental price increases and closely monitoring customer demand. This strategy might assist the business in finding the ideal balance between raising pricing and retaining customer base.**
